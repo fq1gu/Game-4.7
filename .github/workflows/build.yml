@@ -13,7 +13,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Unpack project
-        run: unzip -q mellstroy_run.zip
+        run: |
+          for z in mellstroy_run.zip music_pack*.zip; do
+            if [ -f "$z" ]; then unzip -q -o "$z"; fi
+          done
       - name: Install Godot and export templates
         run: |
           wget -q https://github.com/godotengine/godot/releases/download/${GV}-stable/Godot_v${GV}-stable_linux.x86_64.zip
@@ -29,8 +32,8 @@ jobs:
             "platform-tools" "build-tools;35.0.1" "platforms;android-35" "cmdline-tools;latest" > /dev/null
       - name: Configure Android signing and SDK
         run: |
-          keytool -genkeypair -v -keystore $HOME/debug.keystore -storepass android -alias androiddebugkey \
-            -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          KS="$GITHUB_WORKSPACE/mellstroy_run/signing/mellstroy.keystore"
+          test -f "$KS"
           JAVA_DIR=$(dirname $(dirname $(readlink -f $(which java))))
           mkdir -p ~/.config/godot
           for f in editor_settings-4.tres editor_settings-${GV}.tres; do
@@ -39,9 +42,9 @@ jobs:
           [resource]
           export/android/java_sdk_path = "$JAVA_DIR"
           export/android/android_sdk_path = "$ANDROID_HOME"
-          export/android/debug_keystore = "$HOME/debug.keystore"
-          export/android/debug_keystore_user = "androiddebugkey"
-          export/android/debug_keystore_pass = "android"
+          export/android/debug_keystore = "$KS"
+          export/android/debug_keystore_user = "mellstroy"
+          export/android/debug_keystore_pass = "mellstroy"
           EOS
           done
       - name: Import and export APK
